@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualisasi 3D Jaring-Jaring Bangun Ruang</title>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: rgba(255, 255, 255, 0.9);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --accent: #3b82f6;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      z-index: 10;
+    }
+
+    header .title-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Info Button */
+    .info-btn {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      font-size: 1rem;
+      font-weight: 700;
+      font-style: italic;
+      font-family: 'Georgia', serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .info-btn:hover {
+      background: var(--accent);
+      transform: scale(1.08);
+    }
+
+    /* Info Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(3px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      animation: modalPop 0.2s ease;
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: #ffffff;
+      border-radius: 16px 16px 0 0;
+    }
+
+    .modal-header h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .modal-close {
+      background: #f1f5f9;
+      border: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 0.9rem;
+      color: #334155;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .modal-close:hover {
+      background: #e2e8f0;
+    }
+
+    .modal-body {
+      padding: 20px 22px 26px;
+    }
+
+    .modal-section {
+      margin-bottom: 20px;
+    }
+
+    .modal-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .modal-section h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .modal-section p {
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .modal-section p:last-child {
+      margin-bottom: 0;
+    }
+
+    .modal-steps {
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .modal-steps li {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    .modal-steps li strong {
+      color: #1e293b;
+    }
+
+    /* Shape Nav Buttons */
+    .shape-nav {
+      display: flex;
+      gap: 8px;
+      padding: 10px 24px;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      z-index: 9;
+    }
+
+    .shape-btn {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .shape-btn:hover {
+      background: #e2e8f0;
+      transform: translateY(-1px);
+    }
+
+    .shape-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+    }
+
+    .shape-btn .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Main Container */
+    #canvas-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Overlay Controls */
+    .control-panel {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 16px;
+      padding: 16px 24px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      z-index: 10;
+      min-width: 360px;
+      max-width: 90vw;
+    }
+
+    .slider-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #cbd5e1;
+      outline: none;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .btn-action {
+      background: #1e293b;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .btn-action:hover {
+      background: #0f172a;
+    }
+
+    /* Info Card Panel */
+    .info-panel {
+      position: absolute;
+      top: 16px;
+      right: 24px;
+      width: 300px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+      z-index: 10;
+    }
+
+    .info-panel h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-panel p.desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+
+    .prop-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .prop-table td {
+      padding: 6px 0;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+
+    .prop-table td.label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .prop-table td.val {
+      text-align: right;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    /* Hint Overlay */
+    .hint-overlay {
+      position: absolute;
+      top: 16px;
+      left: 24px;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    @media (max-width: 768px) {
+      .info-panel {
+        display: none; /* Hide detailed info panel on small mobile screens */
+      }
+      .control-panel {
+        bottom: 12px;
+        min-width: 90vw;
+        padding: 12px 16px;
+      }
+    }
+  </style>
+
+  <!-- Import Maps for Three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="title-group">
+      <h1>📦 Jaring - Jaring Bangun Ruang 3D</h1>
+      <p>Visualisasi Interaktif Lipat dan Buka Jaring-Jaring Geometri</p>
+    </div>
+    <button class="info-btn" id="btnInfo" title="Info Aplikasi" aria-label="Info Aplikasi">i</button>
+  </header>
+
+  <!-- Info Modal -->
+  <div class="modal-overlay" id="infoModalOverlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>ℹ️ Tentang Aplikasi</h2>
+        <button class="modal-close" id="btnCloseInfo" aria-label="Tutup">✕</button>
+      </div>
+      <div class="modal-body">
+        <section class="modal-section">
+          <h3>📦 Deskripsi Aplikasi</h3>
+          <p>
+            <strong>Jaring-Jaring Bangun Ruang 3D</strong> adalah aplikasi visualisasi interaktif berbasis web
+            yang menampilkan proses membuka dan melipat jaring-jaring berbagai bangun ruang secara real-time
+            menggunakan grafis 3D (Three.js/WebGL). Aplikasi ini dirancang sebagai media bantu pembelajaran
+            matematika, khususnya materi geometri bangun ruang, agar siswa dapat memahami hubungan antara
+            bentuk jaring-jaring (2D) dengan bangun ruang (3D) secara visual dan intuitif.
+          </p>
+          <p>
+            Bangun ruang yang tersedia: Kubus, Balok, Prisma Segitiga, Limas Segiempat, Limas Segitiga,
+            Tabung, dan Kerucut.
+          </p>
+        </section>
+
+        <section class="modal-section">
+          <h3>🧭 Petunjuk Penggunaan</h3>
+          <ol class="modal-steps">
+            <li><strong>Pilih bangun ruang</strong> yang ingin dipelajari dengan mengklik salah satu tombol pada bilah navigasi di bagian atas (Kubus, Balok, Prisma Segitiga, dst).</li>
+            <li><strong>Geser slider</strong> "Jaring-Jaring (0%) — Bangun Ruang (100%)" pada panel bawah untuk melipat atau membuka jaring-jaring secara manual.</li>
+            <li>Klik tombol <strong>▶ Animasi</strong> untuk memutar animasi lipat-buka secara otomatis dan berulang. Klik lagi (⏸ Pause) untuk menghentikannya.</li>
+            <li><strong>Klik dan seret (drag)</strong> pada area 3D untuk memutar sudut pandang kamera, serta gunakan <strong>scroll</strong> mouse/trackpad untuk memperbesar (zoom in) atau memperkecil (zoom out) tampilan.</li>
+            <li>Klik tombol <strong>🔄 Reset</strong> untuk mengembalikan posisi kamera ke posisi awal.</li>
+            <li>Panel di kanan atas menampilkan <strong>informasi detail</strong> bangun ruang yang sedang aktif: jumlah sisi, rusuk, titik sudut, dan bentuk sisi.</li>
+          </ol>
+        </section>
+
+        <section class="modal-section">
+          <h3>👨‍💻 Pengembang</h3>
+          <p><strong>I Made Agus Suputrayasa</strong></p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shape Selector Navigation Bar -->
+  <div class="shape-nav" id="shapeNav">
+    <button class="shape-btn active" data-shape="kubus">
+      <span class="color-dot" style="background:#2563eb"></span> Kubus
+    </button>
+    <button class="shape-btn" data-shape="balok">
+      <span class="color-dot" style="background:#16a34a"></span> Balok
+    </button>
+    <button class="shape-btn" data-shape="prismaSegitiga">
+      <span class="color-dot" style="background:#9333ea"></span> Prisma Segitiga
+    </button>
+    <button class="shape-btn" data-shape="limasSegiempat">
+      <span class="color-dot" style="background:#d97706"></span> Limas Segiempat
+    </button>
+    <button class="shape-btn" data-shape="limasSegitiga">
+      <span class="color-dot" style="background:#0284c7"></span> Limas Segitiga
+    </button>
+    <button class="shape-btn" data-shape="tabung">
+      <span class="color-dot" style="background:#e11d48"></span> Tabung
+    </button>
+    <button class="shape-btn" data-shape="kerucut">
+      <span class="color-dot" style="background:#ea580c"></span> Kerucut
+    </button>
+  </div>
+
+  <!-- 3D Canvas Area -->
+  <div id="canvas-container">
+    <div class="hint-overlay">💡 Klik & Drag untuk memutar | Scroll untuk Zoom</div>
+
+    <!-- Info Panel Right -->
+    <div class="info-panel" id="infoPanel">
+      <h2 id="infoTitle">Kubus</h2>
+      <p class="desc" id="infoDesc">Kubus adalah bangun ruang 3D yang dibatasi oleh 6 buah sisi berbentuk persegi yang kongruen.</p>
+      <table class="prop-table">
+        <tr>
+          <td class="label">Jumlah Sisi</td>
+          <td class="val" id="propSisi">6</td>
+        </tr>
+        <tr>
+          <td class="label">Jumlah Rusuk</td>
+          <td class="val" id="propRusuk">12</td>
+        </tr>
+        <tr>
+          <td class="label">Titik Sudut</td>
+          <td class="val" id="propSudut">8</td>
+        </tr>
+        <tr>
+          <td class="label">Bentuk Sisi</td>
+          <td class="val" id="propBentuk">6 Persegi</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="control-panel">
+      <button class="btn-action" id="btnPlay">
+        <span id="playIcon">▶</span> Animasi
+      </button>
+
+      <div class="slider-container">
+        <div class="slider-labels">
+          <span>Jaring-Jaring (0%)</span>
+          <span id="foldPercentText">50%</span>
+          <span>Bangun Ruang (100%)</span>
+        </div>
+        <input type="range" id="foldSlider" min="0" max="1" step="0.005" value="0.5">
+      </div>
+
+      <button class="btn-action" id="btnReset" title="Reset Kamera">
+        🔄 Reset
+      </button>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // Metadata Properties for Shapes
+    const SHAPES_DATA = {
+      kubus: {
+        name: 'Kubus',
+        color: 0x2563eb,
+        sisi: '6',
+        rusuk: '12',
+        titikSudut: '8',
+        bentukSisi: '6 Persegi Identik',
+        desc: 'Bangun ruang 3D yang dibatasi oleh 6 sisi berbentuk persegi kongruen.'
+      },
+      balok: {
+        name: 'Balok',
+        color: 0x16a34a,
+        sisi: '6',
+        rusuk: '12',
+        titikSudut: '8',
+        bentukSisi: '6 Persegi Panjang (3 pasang sejajar)',
+        desc: 'Bangun ruang 3D yang dibentuk oleh 3 pasang persegi atau persegi panjang berhadapan.'
+      },
+      prismaSegitiga: {
+        name: 'Prisma Segitiga',
+        color: 0x9333ea,
+        sisi: '5',
+        rusuk: '9',
+        titikSudut: '6',
+        bentukSisi: '2 Segitiga, 3 Persegi Panjang',
+        desc: 'Bangun ruang yang memiliki 2 alas segitiga kongruen dan 3 sisi tegak segi empat.'
+      },
+      limasSegiempat: {
+        name: 'Limas Segiempat',
+        color: 0xd97706,
+        sisi: '5',
+        rusuk: '8',
+        titikSudut: '5',
+        bentukSisi: '1 Persegi (alas), 4 Segitiga',
+        desc: 'Bangun ruang dengan alas segiempat/persegi dan 4 sisi tegak segitiga yang bertemu di satu puncak.'
+      },
+      limasSegitiga: {
+        name: 'Limas Segitiga',
+        color: 0x0284c7,
+        sisi: '4',
+        rusuk: '6',
+        titikSudut: '4',
+        bentukSisi: '4 Segitiga (Tetrahedron)',
+        desc: 'Limas yang memiliki alas berbentuk segitiga serta 3 sisi tegak segitiga.'
+      },
+      tabung: {
+        name: 'Tabung',
+        color: 0xe11d48,
+        sisi: '3 (2 Lingkaran, 1 Selimut)',
+        rusuk: '2 (Lengkung)',
+        titikSudut: '0',
+        bentukSisi: '2 Lingkaran, 1 Persegi Panjang',
+        desc: 'Bangun ruang yang dibatasi dua lingkaran sejajar kongruen dan selimut lengkung.'
+      },
+      kerucut: {
+        name: 'Kerucut',
+        color: 0xea580c,
+        sisi: '2 (1 Lingkaran, 1 Selimut)',
+        rusuk: '1 (Lengkung)',
+        titikSudut: '1 (Puncak)',
+        bentukSisi: '1 Lingkaran (alas), 1 Juring Lingkaran (selimut)',
+        desc: 'Bangun ruang yang dibatasi oleh sebuah lingkaran sebagai alas dan selimut berbentuk juring lingkaran yang bertemu di satu titik puncak.'
+      }
+    };
+
+    // State Variables
+    let scene, camera, renderer, controls;
+    let currentShapeGroup = null;
+    let foldFactor = 0.5;
+    let isAnimating = false;
+    let animDirection = 1;
+    let updateFoldCallback = null;
+    let activeShapeKey = 'kubus';
+
+    const container = document.getElementById('canvas-container');
+    const foldSlider = document.getElementById('foldSlider');
+    const foldPercentText = document.getElementById('foldPercentText');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnReset = document.getElementById('btnReset');
+
+    // Initialize WebGL Scene
+    function init() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf8fafc);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+      camera.position.set(4, 5, 8);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 + 0.1; // Don't go below floor
+      controls.minDistance = 3;
+      controls.maxDistance = 18;
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight.position.set(6, 12, 8);
+      dirLight.castShadow = true;
+      scene.add(dirLight);
+
+      const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.3);
+      fillLight.position.set(-6, -4, -6);
+      scene.add(fillLight);
+
+      // Floor Grid
+      const grid = new THREE.GridHelper(20, 20, 0x94a3b8, 0xe2e8f0);
+      grid.position.y = -1.5;
+      scene.add(grid);
+
+      // Listeners
+      window.addEventListener('resize', onWindowResize);
+      
+      foldSlider.addEventListener('input', (e) => {
+        foldFactor = parseFloat(e.target.value);
+        updateFoldUI();
+        if (updateFoldCallback) updateFoldCallback(foldFactor);
+      });
+
+      btnPlay.addEventListener('click', () => {
+        isAnimating = !isAnimating;
+        btnPlay.innerHTML = isAnimating ? '⏸ Pause' : '▶ Animasi';
+      });
+
+      btnReset.addEventListener('click', () => {
+        camera.position.set(4, 5, 8);
+        controls.target.set(0, 0, 0);
+        controls.update();
+      });
+
+      setupNav();
+      loadShape('kubus');
+
+      animate();
+    }
+
+    // Helper: Create Styled Face Mesh
+    function createFace(geometry, color) {
+      const material = new THREE.MeshStandardMaterial({
+        color: color,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.88,
+        roughness: 0.3,
+        metalness: 0.1
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+
+      const edges = new THREE.EdgesGeometry(geometry);
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x0f172a, linewidth: 2 });
+      const wireframe = new THREE.LineSegments(edges, lineMat);
+      mesh.add(wireframe);
+
+      return mesh;
+    }
+
+    // -------------------------------------------------------------
+    // SHAPE BUILDERS (Hinged Hierarchies for Net Folding)
+    // -------------------------------------------------------------
+
+    // 1. KUBUS (Cube)
+    // Prinsip: setiap sisi dibuat REBAH (datar, y=0) menempel pada rusuk alas
+    // saat f=0 (Jaring-Jaring), lalu diputar mengelilingi rusuk engselnya
+    // hingga tegak membentuk kubus saat f=1 (Bangun Ruang).
+    function buildKubus() {
+      const group = new THREE.Group();
+      const s = 1.8; // Panjang rusuk
+      const color = SHAPES_DATA.kubus.color;
+
+      // Alas (tidak berubah, selalu datar)
+      const baseGeom = new THREE.PlaneGeometry(s, s);
+      baseGeom.rotateX(-Math.PI / 2);
+      group.add(createFace(baseGeom, color));
+
+      // Helper: buat persegi yang REBAH menjulur dari titik engsel (0,0,0)
+      // ke arah sumbu X atau Z sejauh s.
+      function flatSquare(axis, sign) {
+        const g = new THREE.PlaneGeometry(s, s);
+        g.rotateX(-Math.PI / 2); // rebahkan ke bidang XZ
+        if (axis === 'x') g.translate(sign * s / 2, 0, 0);
+        else g.translate(0, 0, sign * s / 2);
+        return g;
+      }
+
+      // Depan - engsel di rusuk depan alas (z = s/2), berputar pada sumbu X
+      const frontPivot = new THREE.Group();
+      frontPivot.position.set(0, 0, s / 2);
+      frontPivot.add(createFace(flatSquare('z', 1), color));
+      group.add(frontPivot);
+
+      // Belakang - engsel di rusuk belakang alas (z = -s/2), sumbu X
+      const backPivot = new THREE.Group();
+      backPivot.position.set(0, 0, -s / 2);
+      backPivot.add(createFace(flatSquare('z', -1), color));
+      group.add(backPivot);
+
+      // Kiri - engsel di rusuk kiri alas (x = -s/2), sumbu Z
+      const leftPivot = new THREE.Group();
+      leftPivot.position.set(-s / 2, 0, 0);
+      leftPivot.add(createFace(flatSquare('x', -1), color));
+      group.add(leftPivot);
+
+      // Kanan - engsel di rusuk kanan alas (x = s/2), sumbu Z
+      const rightPivot = new THREE.Group();
+      rightPivot.position.set(s / 2, 0, 0);
+      rightPivot.add(createFace(flatSquare('x', 1), color));
+      group.add(rightPivot);
+
+      // Atas - menyambung pada ujung luar sisi Kanan (rangkaian 1 baris + atas),
+      // jadi merupakan ANAK dari rightPivot dan ikut terbawa saat sisi kanan berputar.
+      const topPivot = new THREE.Group();
+      topPivot.position.set(s, 0, 0); // posisi relatif terhadap rightPivot
+      topPivot.add(createFace(flatSquare('x', 1), color));
+      rightPivot.add(topPivot);
+
+      group.position.y = -0.5;
+
+      updateFoldCallback = (f) => {
+        const a = f * (Math.PI / 2);
+        frontPivot.rotation.x = -a;
+        backPivot.rotation.x = a;
+        leftPivot.rotation.z = -a;
+        rightPivot.rotation.z = a;
+        topPivot.rotation.z = a;
+      };
+
+      return group;
+    }
+
+    // 2. BALOK (Cuboid)
+    // Prinsip sama seperti kubus: semua sisi rebah datar saat f=0, lalu
+    // diputar mengelilingi rusuk alasnya menjadi tegak saat f=1.
+    function buildBalok() {
+      const group = new THREE.Group();
+      const w = 2.4, h = 1.3, d = 1.6;
+      const color = SHAPES_DATA.balok.color;
+
+      // Alas (w x d) - datar, tidak berubah
+      const baseGeom = new THREE.PlaneGeometry(w, d);
+      baseGeom.rotateX(-Math.PI / 2);
+      group.add(createFace(baseGeom, color));
+
+      // Depan & Belakang (lebar w, tinggi h) - engsel sumbu X
+      function faceWH(sign) {
+        const g = new THREE.PlaneGeometry(w, h);
+        g.rotateX(-Math.PI / 2);
+        g.translate(0, 0, sign * h / 2);
+        return g;
+      }
+      const frontPivot = new THREE.Group();
+      frontPivot.position.set(0, 0, d / 2);
+      frontPivot.add(createFace(faceWH(1), color));
+      group.add(frontPivot);
+
+      const backPivot = new THREE.Group();
+      backPivot.position.set(0, 0, -d / 2);
+      backPivot.add(createFace(faceWH(-1), color));
+      group.add(backPivot);
+
+      // Kiri & Kanan (lebar d, tinggi h) - engsel sumbu Z
+      function faceHD(sign) {
+        const g = new THREE.PlaneGeometry(h, d);
+        g.rotateX(-Math.PI / 2);
+        g.translate(sign * h / 2, 0, 0);
+        return g;
+      }
+      const leftPivot = new THREE.Group();
+      leftPivot.position.set(-w / 2, 0, 0);
+      leftPivot.add(createFace(faceHD(-1), color));
+      group.add(leftPivot);
+
+      const rightPivot = new THREE.Group();
+      rightPivot.position.set(w / 2, 0, 0);
+      rightPivot.add(createFace(faceHD(1), color));
+      group.add(rightPivot);
+
+      // Atas (w x d) - menyambung pada ujung luar sisi Belakang (anak dari backPivot)
+      const topPivot = new THREE.Group();
+      topPivot.position.set(0, 0, -h); // relatif terhadap backPivot
+      const topGeom = new THREE.PlaneGeometry(w, d);
+      topGeom.rotateX(-Math.PI / 2);
+      topGeom.translate(0, 0, -d / 2);
+      topPivot.add(createFace(topGeom, color));
+      backPivot.add(topPivot);
+
+      group.position.y = -0.5;
+
+      updateFoldCallback = (f) => {
+        const a = f * (Math.PI / 2);
+        frontPivot.rotation.x = -a;
+        backPivot.rotation.x = a;
+        leftPivot.rotation.z = -a;
+        rightPivot.rotation.z = a;
+        topPivot.rotation.x = a;
+      };
+
+      return group;
+    }
+
+    // 3. PRISMA SEGITIGA (Triangular Prism)
+    // Alas persegi panjang datar; 2 sisi miring & 2 segitiga ujung rebah
+    // menjulur keluar dari rusuk alas saat f=0, lalu dilipat naik hingga
+    // bertemu membentuk prisma saat f=1.
+    function buildPrismaSegitiga() {
+      const group = new THREE.Group();
+      const w = 2.0, l = 2.5, ht = 1.8;
+      const slant = Math.sqrt(Math.pow(w / 2, 2) + Math.pow(ht, 2));
+      const alpha = Math.atan2(ht, w / 2); // sudut kemiringan sisi miring
+
+      const color = SHAPES_DATA.prismaSegitiga.color;
+
+      // Alas (w x l) - datar
+      const baseGeom = new THREE.PlaneGeometry(w, l);
+      baseGeom.rotateX(-Math.PI / 2);
+      group.add(createFace(baseGeom, color));
+
+      // Sisi miring Kiri & Kanan (slant x l) - engsel sumbu Z
+      const leftPivot = new THREE.Group();
+      leftPivot.position.set(-w / 2, 0, 0);
+      const leftGeom = new THREE.PlaneGeometry(slant, l);
+      leftGeom.rotateX(-Math.PI / 2);
+      leftGeom.translate(-slant / 2, 0, 0);
+      leftPivot.add(createFace(leftGeom, color));
+      group.add(leftPivot);
+
+      const rightPivot = new THREE.Group();
+      rightPivot.position.set(w / 2, 0, 0);
+      const rightGeom = new THREE.PlaneGeometry(slant, l);
+      rightGeom.rotateX(-Math.PI / 2);
+      rightGeom.translate(slant / 2, 0, 0);
+      rightPivot.add(createFace(rightGeom, color));
+      group.add(rightPivot);
+
+      // Segitiga ujung Depan & Belakang - engsel sumbu X, rebah menjulur
+      // sejauh 'ht' (tinggi segitiga = jarak dari rusuk alas ke puncak).
+      function triFlat(sign) {
+        const g = new THREE.BufferGeometry();
+        const verts = new Float32Array([
+          -w / 2, 0, 0,
+           w / 2, 0, 0,
+           0, 0, sign * ht
+        ]);
+        g.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+        g.computeVertexNormals();
+        return g;
+      }
+      const frontPivot = new THREE.Group();
+      frontPivot.position.set(0, 0, l / 2);
+      frontPivot.add(createFace(triFlat(1), color));
+      group.add(frontPivot);
+
+      const backPivot = new THREE.Group();
+      backPivot.position.set(0, 0, -l / 2);
+      backPivot.add(createFace(triFlat(-1), color));
+      group.add(backPivot);
+
+      group.position.y = -0.6;
+
+      updateFoldCallback = (f) => {
+        const slantAngle = f * (Math.PI - alpha);
+        leftPivot.rotation.z = -slantAngle;
+        rightPivot.rotation.z = slantAngle;
+
+        const triAngle = f * (Math.PI / 2);
+        frontPivot.rotation.x = -triAngle;
+        backPivot.rotation.x = triAngle;
+      };
+
+      return group;
+    }
+
+    // 4. LIMAS SEGIEMPAT (Square Pyramid)
+    // Alas persegi datar; 4 segitiga rebah menjulur keluar dari tiap rusuk
+    // alas saat f=0, lalu dilipat naik bertemu di satu puncak saat f=1.
+    function buildLimasSegiempat() {
+      const group = new THREE.Group();
+      const s = 2.2, h = 2.0;
+      const slantH = Math.sqrt(Math.pow(s / 2, 2) + Math.pow(h, 2)); // tinggi sisi tegak (segitiga)
+      const beta = Math.atan2(h, s / 2); // sudut puncak limas terhadap alas
+      const color = SHAPES_DATA.limasSegiempat.color;
+
+      // Alas persegi
+      const baseGeom = new THREE.PlaneGeometry(s, s);
+      baseGeom.rotateX(-Math.PI / 2);
+      group.add(createFace(baseGeom, color));
+
+      // Segitiga dengan alas sejajar sumbu X, puncak menjulur ke sumbu Z
+      function triFlatX(sign) {
+        const g = new THREE.BufferGeometry();
+        const verts = new Float32Array([
+          -s / 2, 0, 0,
+           s / 2, 0, 0,
+           0, 0, sign * slantH
+        ]);
+        g.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+        g.computeVertexNormals();
+        return g;
+      }
+      // Segitiga dengan alas sejajar sumbu Z, puncak menjulur ke sumbu X
+      function triFlatZ(sign) {
+        const g = new THREE.BufferGeometry();
+        const verts = new Float32Array([
+          0, 0, -s / 2,
+          0, 0, s / 2,
+          sign * slantH, 0, 0
+        ]);
+        g.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+        g.computeVertexNormals();
+        return g;
+      }
+
+      // Depan & Belakang - engsel sumbu X
+      const frontPivot = new THREE.Group();
+      frontPivot.position.set(0, 0, s / 2);
+      frontPivot.add(createFace(triFlatX(1), color));
+      group.add(frontPivot);
+
+      const backPivot = new THREE.Group();
+      backPivot.position.set(0, 0, -s / 2);
+      backPivot.add(createFace(triFlatX(-1), color));
+      group.add(backPivot);
+
+      // Kiri & Kanan - engsel sumbu Z
+      const leftPivot = new THREE.Group();
+      leftPivot.position.set(-s / 2, 0, 0);
+      leftPivot.add(createFace(triFlatZ(-1), color));
+      group.add(leftPivot);
+
+      const rightPivot = new THREE.Group();
+      rightPivot.position.set(s / 2, 0, 0);
+      rightPivot.add(createFace(triFlatZ(1), color));
+      group.add(rightPivot);
+
+      group.position.y = -0.5;
+
+      updateFoldCallback = (f) => {
+        const angle = f * (Math.PI - beta);
+        frontPivot.rotation.x = -angle;
+        backPivot.rotation.x = angle;
+        leftPivot.rotation.z = -angle;
+        rightPivot.rotation.z = angle;
+      };
+
+      return group;
+    }
+
+    // 5. LIMAS SEGITIGA (Tetrahedron)
+    // Alas segitiga sama sisi datar; 3 segitiga sisi tegak rebah menjulur
+    // keluar dari tiap rusuk alas saat f=0, lalu dilipat naik bertemu di
+    // satu puncak saat f=1. Sisi p2 & p3 memakai GRUP LUAR (rotasi statis
+    // untuk mengarahkan engsel) + GRUP DALAM (rotasi animasi lipatan) agar
+    // sumbu lipatnya benar-benar mengikuti arah rusuk alasnya masing-masing.
+    function buildLimasSegitiga() {
+      const group = new THREE.Group();
+      const a = 2.5; // Panjang rusuk
+      const hTri = a * Math.sqrt(3) / 2;      // tinggi segitiga sama sisi
+      const r = hTri / 3;                     // jari-jari dalam alas
+      const R = 2 * hTri / 3;                 // jari-jari luar alas
+      const H = a * Math.sqrt(2 / 3);         // tinggi limas (puncak di atas pusat alas)
+      const gamma = Math.atan2(H, r);
+      const foldAngle = Math.PI - gamma;      // sudut lipat dari rebah ke berdiri
+      const color = SHAPES_DATA.limasSegitiga.color;
+
+      // Alas segitiga sama sisi
+      const baseGeom = new THREE.BufferGeometry();
+      const baseVerts = new Float32Array([
+        0, 0, -R,
+        a / 2, 0, r,
+       -a / 2, 0, r
+      ]);
+      baseGeom.setAttribute('position', new THREE.BufferAttribute(baseVerts, 3));
+      baseGeom.computeVertexNormals();
+      group.add(createFace(baseGeom, color));
+
+      // Segitiga sisi tegak, rebah dengan alas di sumbu X, puncak menjulur ke +Z
+      function sideTri() {
+        const g = new THREE.BufferGeometry();
+        const verts = new Float32Array([
+          -a / 2, 0, 0,
+           a / 2, 0, 0,
+           0, 0, hTri
+        ]);
+        g.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+        g.computeVertexNormals();
+        return g;
+      }
+
+      // p1: menempel pada rusuk depan (z = r), searah sumbu X — tidak perlu grup luar
+      const p1 = new THREE.Group();
+      p1.position.set(0, 0, r);
+      p1.add(createFace(sideTri(), color));
+      group.add(p1);
+
+      // p2: menempel pada rusuk kiri
+      const p2Outer = new THREE.Group();
+      p2Outer.position.set(-a / 4, 0, (r - R) / 2);
+      p2Outer.rotation.y = -(2 * Math.PI) / 3;
+      const p2 = new THREE.Group();
+      p2.add(createFace(sideTri(), color));
+      p2Outer.add(p2);
+      group.add(p2Outer);
+
+      // p3: menempel pada rusuk kanan
+      const p3Outer = new THREE.Group();
+      p3Outer.position.set(a / 4, 0, (r - R) / 2);
+      p3Outer.rotation.y = (2 * Math.PI) / 3;
+      const p3 = new THREE.Group();
+      p3.add(createFace(sideTri(), color));
+      p3Outer.add(p3);
+      group.add(p3Outer);
+
+      group.position.y = -0.5;
+
+      updateFoldCallback = (f) => {
+        const angle = f * foldAngle;
+        p1.rotation.x = -angle;
+        p2.rotation.x = -angle;
+        p3.rotation.x = -angle;
+      };
+
+      return group;
+    }
+
+    // 6. TABUNG (Cylinder Net Rolling)
+    function buildTabung() {
+      const group = new THREE.Group();
+      const R = 1.1, H = 2.2;
+      const color = SHAPES_DATA.tabung.color;
+
+      // Unrolling Lateral Surface (Plane that rolls into cylinder)
+      const segX = 64, segY = 1;
+      const W = 2 * Math.PI * R;
+      const planeGeom = new THREE.PlaneGeometry(W, H, segX, segY);
+      const origPos = planeGeom.attributes.position.clone();
+
+      const mat = new THREE.MeshStandardMaterial({
+        color: color,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.88,
+        roughness: 0.3
+      });
+      const cylMesh = new THREE.Mesh(planeGeom, mat);
+      
+      const wireframe = new THREE.LineSegments(
+        new THREE.WireframeGeometry(planeGeom),
+        new THREE.LineBasicMaterial({ color: 0x0f172a, linewidth: 1.5 })
+      );
+      cylMesh.add(wireframe);
+      group.add(cylMesh);
+
+      // Top Circle Cap
+      const circleGeom1 = new THREE.CircleGeometry(R, 32);
+      const topCap = createFace(circleGeom1, color);
+      group.add(topCap);
+
+      // Bottom Circle Cap
+      const circleGeom2 = new THREE.CircleGeometry(R, 32);
+      const botCap = createFace(circleGeom2, color);
+      group.add(botCap);
+
+      updateFoldCallback = (f) => {
+        // Morph plane into cylinder
+        const pos = planeGeom.attributes.position;
+        const fEff = Math.max(f, 0.0001);
+
+        for (let i = 0; i < pos.count; i++) {
+          const x0 = origPos.getX(i);
+          const y0 = origPos.getY(i);
+
+          const theta = (fEff * x0) / R;
+          const Rc = R / fEff;
+
+          const xNew = Rc * Math.sin(theta);
+          const zNew = Rc * (1 - Math.cos(theta));
+
+          pos.setXYZ(i, xNew, y0, zNew);
+        }
+        pos.needsUpdate = true;
+        planeGeom.computeVertexNormals();
+
+        // Position caps
+        topCap.position.set(0, H / 2 + R * (1 - f), R * f);
+        topCap.rotation.x = -f * (Math.PI / 2);
+
+        botCap.position.set(0, -H / 2 - R * (1 - f), R * f);
+        botCap.rotation.x = f * (Math.PI / 2);
+      };
+
+      return group;
+    }
+
+    // 7. KERUCUT (Cone Net Rolling)
+    // Prinsip: selimut kerucut adalah juring lingkaran (sektor) datar yang
+    // "menguncup" mengelilingi sumbu vertikal seiring f bertambah, sedangkan
+    // titik puncak (rho=0) selalu tetap diam di titik asal. Alas lingkaran
+    // mengikuti titik ujung sektor (rho=L, phi=0) dan bergeser dari posisi
+    // rebah bersebelahan (f=0) menuju posisi tegak di bawah puncak (f=1).
+    function buildKerucut() {
+      const group = new THREE.Group();
+      const R = 1.3, H = 2.2;                 // jari-jari & tinggi kerucut
+      const L = Math.sqrt(R * R + H * H);     // garis pelukis (slant height)
+      const gammaFinal = Math.atan2(R, H);    // sudut puncak kerucut jadi (dari sumbu)
+      const theta = 2 * Math.PI * (R / L);    // sudut juring selimut saat datar
+      const color = SHAPES_DATA.kerucut.color;
+
+      const N = 64; // jumlah segmen keliling agar selimut tampak melengkung halus
+      const vertCount = N + 2; // 1 titik puncak + (N+1) titik tepi juring
+
+      const rhoArr = new Float32Array(vertCount);
+      const phiArr = new Float32Array(vertCount);
+      rhoArr[0] = 0; phiArr[0] = 0;
+      for (let i = 0; i <= N; i++) {
+        rhoArr[i + 1] = L;
+        phiArr[i + 1] = -theta / 2 + theta * (i / N);
+      }
+
+      const indices = [];
+      for (let i = 0; i < N; i++) indices.push(0, i + 1, i + 2);
+
+      const positions = new Float32Array(vertCount * 3);
+      const lateralGeom = new THREE.BufferGeometry();
+      lateralGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      lateralGeom.setIndex(indices);
+
+      const mat = new THREE.MeshStandardMaterial({
+        color: color,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.88,
+        roughness: 0.3,
+        metalness: 0.1
+      });
+      const lateralMesh = new THREE.Mesh(lateralGeom, mat);
+      const wireframe = new THREE.LineSegments(
+        new THREE.WireframeGeometry(lateralGeom),
+        new THREE.LineBasicMaterial({ color: 0x0f172a, linewidth: 1.5 })
+      );
+      lateralMesh.add(wireframe);
+      group.add(lateralMesh);
+
+      // Alas lingkaran
+      const capGeom = new THREE.CircleGeometry(R, 48);
+      const cap = createFace(capGeom, color);
+      cap.rotation.x = -Math.PI / 2; // rebahkan agar selalu datar horizontal
+      group.add(cap);
+
+      group.position.y = H / 2 - 0.5;
+
+      updateFoldCallback = (f) => {
+        // sudut puncak sektor: 90° (datar total) saat f=0 -> gammaFinal saat f=1
+        const gamma = (1 - f) * (Math.PI / 2) + f * gammaFinal;
+        const sinG = Math.sin(gamma);
+        const rF = L * sinG;      // jari-jari selimut pada ketinggian saat ini
+        const hF = L * Math.cos(gamma); // jarak turun dari puncak
+
+        const pos = lateralGeom.attributes.position;
+        for (let i = 0; i < vertCount; i++) {
+          if (rhoArr[i] === 0) {
+            pos.setXYZ(i, 0, 0, 0); // puncak selalu diam di titik asal
+            continue;
+          }
+          const beta = phiArr[i] / sinG; // sudut riil di sekeliling sumbu
+          pos.setXYZ(i, rF * Math.sin(beta), -hF, rF * Math.cos(beta));
+        }
+        pos.needsUpdate = true;
+        lateralGeom.computeVertexNormals();
+
+        // Alas mengikuti titik tepi juring (phi=0), lalu menutup ke sumbu saat f=1
+        const offsetZ = R * (1 - 2 * f);
+        cap.position.set(0, -hF, rF + offsetZ);
+      };
+
+      return group;
+    }
+
+    // -------------------------------------------------------------
+    // UI & CONTROLS INTERACTION
+    // -------------------------------------------------------------
+
+    function loadShape(shapeKey) {
+      if (currentShapeGroup) {
+        scene.remove(currentShapeGroup);
+      }
+
+      activeShapeKey = shapeKey;
+      const data = SHAPES_DATA[shapeKey];
+
+      // Update Info Panel
+      document.getElementById('infoTitle').innerText = data.name;
+      document.getElementById('infoDesc').innerText = data.desc;
+      document.getElementById('propSisi').innerText = data.sisi;
+      document.getElementById('propRusuk').innerText = data.rusuk;
+      document.getElementById('propSudut').innerText = data.titikSudut;
+      document.getElementById('propBentuk').innerText = data.bentukSisi;
+
+      // Build 3D Shape Group
+      switch (shapeKey) {
+        case 'kubus': currentShapeGroup = buildKubus(); break;
+        case 'balok': currentShapeGroup = buildBalok(); break;
+        case 'prismaSegitiga': currentShapeGroup = buildPrismaSegitiga(); break;
+        case 'limasSegiempat': currentShapeGroup = buildLimasSegiempat(); break;
+        case 'limasSegitiga': currentShapeGroup = buildLimasSegitiga(); break;
+        case 'tabung': currentShapeGroup = buildTabung(); break;
+        case 'kerucut': currentShapeGroup = buildKerucut(); break;
+      }
+
+      scene.add(currentShapeGroup);
+      if (updateFoldCallback) updateFoldCallback(foldFactor);
+    }
+
+    function setupNav() {
+      const buttons = document.querySelectorAll('.shape-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          buttons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          loadShape(btn.dataset.shape);
+        });
+      });
+    }
+
+    function updateFoldUI() {
+      foldSlider.value = foldFactor;
+      foldPercentText.innerText = Math.round(foldFactor * 100) + '%';
+    }
+
+    function onWindowResize() {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    // Render Animation Loop
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (isAnimating) {
+        foldFactor += 0.006 * animDirection;
+        if (foldFactor >= 1) {
+          foldFactor = 1;
+          animDirection = -1;
+        } else if (foldFactor <= 0) {
+          foldFactor = 0;
+          animDirection = 1;
+        }
+        updateFoldUI();
+        if (updateFoldCallback) updateFoldCallback(foldFactor);
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // Info Modal Controls
+    function setupInfoModal() {
+      const overlay = document.getElementById('infoModalOverlay');
+      const btnInfo = document.getElementById('btnInfo');
+      const btnClose = document.getElementById('btnCloseInfo');
+
+      btnInfo.addEventListener('click', () => overlay.classList.add('open'));
+      btnClose.addEventListener('click', () => overlay.classList.remove('open'));
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('open');
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') overlay.classList.remove('open');
+      });
+    }
+    setupInfoModal();
+
+    window.onload = init;
+  </script>
+</body>
+</html>
